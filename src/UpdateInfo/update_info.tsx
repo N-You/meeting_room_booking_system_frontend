@@ -3,7 +3,8 @@ import { useForm } from 'antd/es/form/Form';
 import { useCallback, useEffect } from 'react';
 import './update_info.css';
 import { useNavigate } from 'react-router-dom';
-import { getUserInfo } from '../interfaces';
+import { getUserInfo, updateInfo, updateUserInfoCaptcha } from '../interfaces';
+import { HeadPicUpload } from './HeadPicUpload';
 
 export interface UserInfo {
     headPic: string;
@@ -29,7 +30,11 @@ export function UpdateInfo() {
             const { data } = res.data;
 
             if (res.status === 201 || res.status === 200) {
-                console.log(data);
+                form.setFieldsValue({
+                    headPic: data.headPic,
+                    nickName: data.nickName,
+                    email: data.email,
+                });
             }
         }
         query();
@@ -37,11 +42,30 @@ export function UpdateInfo() {
 
 
     const onFinish = useCallback(async (values: UserInfo) => {
+        const res = await updateInfo(values);
 
+        if (res.status === 201 || res.status === 200) {
+            const { message: msg, data } = res.data;
+            if (msg === 'success') {
+                message.success('用户信息更新成功');
+            } else {
+                message.error(data);
+            }
+        } else {
+            message.error('系统繁忙，请稍后再试');
+        }
     }, []);
+
 
     const sendCaptcha = useCallback(async function () {
+        const res = await updateUserInfoCaptcha();
+        if (res.status === 201 || res.status === 200) {
+            message.success(res.data.data);
+        } else {
+            message.error('系统繁忙，请稍后再试');
+        }
     }, []);
+
 
     return <div id="updateInfo-container">
         <Form
@@ -58,7 +82,7 @@ export function UpdateInfo() {
                     { required: true, message: '请输入头像!' },
                 ]}
             >
-                <Input />
+                <HeadPicUpload />
             </Form.Item>
 
             <Form.Item
@@ -79,7 +103,7 @@ export function UpdateInfo() {
                     { type: "email", message: '请输入合法邮箱地址!' }
                 ]}
             >
-                <Input />
+                <Input disabled />
             </Form.Item>
 
             <div className='captcha-wrapper'>
